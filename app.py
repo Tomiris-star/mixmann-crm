@@ -70,7 +70,6 @@ def load_data():
         except:
             pass
     
-    # Полная актуальная база данных со скриншотов
     data = {
         "Категория": [
             "Готовая продукция", "Готовая продукция", "Готовая продукция", "Готовая продукция", "Готовая продукция", "Готовая продукция",
@@ -116,6 +115,21 @@ with tab1:
             card_html += f"<div style='padding: 8px 0; border-bottom: 0.5px solid #F2F2F7;'><b>{name}</b> <span style='float: right; color: #007AFF; font-weight: 600;'>{qty} {unit}</span></div>"
         card_html += "</div>"
         st.markdown(card_html, unsafe_allow_html=True)
+
+    # Блок стоимости готовой продукции со скриншота
+    st.markdown("### 💰 Стоимость готовой продукции")
+    st.markdown("""
+        <div class='ios-card' style='background: #F2F9F1; border: 1px solid #D2EBD0;'>
+            <div style='padding: 6px 0; border-bottom: 0.5px solid #E5E5EA;'><b>Стяжка:</b> <span style='float: right;'>0 ₸</span></div>
+            <div style='padding: 6px 0; border-bottom: 0.5px solid #E5E5EA;'><b>ШВС:</b> <span style='float: right; font-weight: 600;'>1 094 400 ₸</span></div>
+            <div style='padding: 6px 0; border-bottom: 0.5px solid #E5E5EA;'><b>Клей:</b> <span style='float: right; font-weight: 600;'>478 800 ₸</span> <div style='font-size: 12px; color: #666;'>(399 мешков × 1 200 ₸)</div></div>
+            <div style='padding: 6px 0;'><b>Strong:</b> <span style='float: right; font-weight: 600;'>43 200 ₸</span></div>
+        </div>
+        <div class='ios-card' style='background: #E8F2FF; border: 1px solid #CCE4FF; text-align: center;'>
+            <div style='font-size: 14px; color: #555;'>Общая стоимость готовой продукции</div>
+            <div style='font-size: 22px; font-weight: 700; color: #0051B3; margin-top: 4px;'>1 616 400 ₸</div>
+        </div>
+    """, unsafe_allow_html=True)
 
     with st.expander("✏️ Изменить остатки товаров"):
         item_list = df["Наименование"].tolist()
