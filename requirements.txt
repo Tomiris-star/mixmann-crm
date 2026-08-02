@@ -1,0 +1,8 @@
+streamlit
+streamlit-option-menu
+streamlit-extras
+pandas
+python-dotenv
+gspread
+google-auth
+google-auth-oauthlib
