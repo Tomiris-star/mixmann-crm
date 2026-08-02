@@ -75,7 +75,7 @@ st.markdown("""
         border-radius: 14px;
         font-weight: 600;
         border: none;
-        padding: 12px 20px;
+        padding: 10px 20px;
         width: 100%;
         box-shadow: 0 4px 14px rgba(37, 99, 235, 0.25);
     }
@@ -109,13 +109,13 @@ def load_data():
             "ШВС", "Клей", "Стяжка", "Granit", "Strong"
         ],
         "Количество": [
-            0, 19, 15, 0, 0, 24,
-            22, 494, 173.1, 100, 24, 48.8, 8, 40, 2,
+            0, 19, "8 п + 15 мешков", 0, 0, 24,
+            22, "16 п + 14 мешков", 173.1, 100, 24, 48.8, 8, 40, 2,
             2118, 1018, 5025, 5035, 5044
         ],
         "Ед. измерения": [
-            "мешков", "п", "п + 15 мешков", "мешков", "мешков", "мешка",
-            "т", "мешков (16п + 14м)", "кг", "кг", "кг", "кг", "бочек", "шт", "шт",
+            "мешков", "п", "", "мешков", "мешков", "мешка",
+            "т", "", "кг", "кг", "кг", "кг", "бочек", "шт", "шт",
             "шт", "шт", "шт", "шт", "шт"
         ]
     }
@@ -138,57 +138,67 @@ df = load_data()
 tab1, tab2, tab3, tab4 = st.tabs(["Склад", "Анализ", "Финансы", "Рецептуры"])
 
 with tab1:
-    st.markdown("### Умный ввод с телефона")
-    user_input = st.text_input("Введите операцию", placeholder="Например: Клей 4 или Цемент +50", label_visibility="collapsed")
+    st.markdown("### Изменить наличие на складе")
+    col_input, col_btn = st.columns([3, 1])
+    with col_input:
+        user_input = st.text_input("Операция", placeholder="Клей 4 или Цемент +50", label_visibility="collapsed")
+    with col_btn:
+        submit_btn = st.button("OK")
     
-    if user_input:
-        text_lower = user_input.lower().strip()
-        parts = text_lower.split()
-        
-        val = 0.0
-        is_addition = "плюс" in text_lower or "+" in text_lower or "привез" in text_lower or "приход" in text_lower
-        is_subtraction = "минус" in text_lower or "-" in text_lower or "отгруз" in text_lower
-        
-        clean_parts = []
-        for p in parts:
-            p_clean = p.replace("+", "").replace("-", "")
-            try:
-                val = float(p_clean)
-                if "-" in p: is_subtraction = True
-                if "+" in p: is_addition = True
-            except:
-                clean_parts.append(p)
-                
-        item_name_query = " ".join(clean_parts)
-        if not is_addition and not is_subtraction:
-            is_subtraction = True
+    if user_input or submit_btn:
+        if user_input:
+            text_lower = user_input.lower().strip()
+            parts = text_lower.split()
+            
+            val = 0.0
+            is_addition = "плюс" in text_lower or "+" in text_lower or "привез" in text_lower or "приход" in text_lower
+            is_subtraction = "минус" in text_lower or "-" in text_lower or "отгруз" in text_lower
+            
+            clean_parts = []
+            for p in parts:
+                p_clean = p.replace("+", "").replace("-", "")
+                try:
+                    val = float(p_clean)
+                    if "-" in p: is_subtraction = True
+                    if "+" in p: is_addition = True
+                except:
+                    clean_parts.append(p)
+                    
+            item_name_query = " ".join(clean_parts)
+            if not is_addition and not is_subtraction:
+                is_subtraction = True
 
-        found = False
-        if item_name_query and val > 0:
-            for idx, row in df.iterrows():
-                row_name_lower = str(row["Наименование"]).lower()
-                if item_name_query in row_name_lower or row_name_lower in item_name_query:
-                    current_q = float(row["Количество"])
-                    unit = row["Ед. измерения"]
-                    if is_subtraction and not is_addition:
-                        new_q = max(0.0, current_q - val)
-                        msg = f"Списано: *{row['Наименование']}* — {val} {unit}. Остаток: *{new_q}*"
-                        log_action("Отгрузка / Расход", row["Наименование"], val, unit)
-                    else:
-                        new_q = current_q + val
-                        msg = f"Приход: *{row['Наименование']}* +{val} {unit}. Остаток: *{new_q}*"
-                        log_action("Приход", row["Наименование"], val, unit)
-                        
-                    df.loc[idx, "Количество"] = new_q
-                    found = True
-                    break
-        
-        if found:
-            df.to_csv(CSV_FILE, index=False)
-            st.success(msg)
-            st.rerun()
-        else:
-            st.warning("Не распознано. Пример: Клей 4 или Цемент 50")
+            found = False
+            if item_name_query and val > 0:
+                for idx, row in df.iterrows():
+                    row_name_lower = str(row["Наименование"]).lower()
+                    if item_name_query in row_name_lower or row_name_lower in item_name_query:
+                        current_q_raw = row["Количество"]
+                        try:
+                            current_q = float(current_q_raw)
+                        except:
+                            current_q = 0.0
+                            
+                        unit = row["Ед. измерения"]
+                        if is_subtraction and not is_addition:
+                            new_q = max(0.0, current_q - val)
+                            msg = f"Списано: *{row['Наименование']}* — {val} {unit}. Остаток: *{new_q}*"
+                            log_action("Отгрузка / Расход", row["Наименование"], val, unit)
+                        else:
+                            new_q = current_q + val
+                            msg = f"Приход: *{row['Наименование']}* +{val} {unit}. Остаток: *{new_q}*"
+                            log_action("Приход", row["Наименование"], val, unit)
+                            
+                        df.loc[idx, "Количество"] = new_q
+                        found = True
+                        break
+            
+            if found:
+                df.to_csv(CSV_FILE, index=False)
+                st.success(msg)
+                st.rerun()
+            else:
+                st.warning("Не распознано. Пример: Клей 4 или Цемент 50")
 
     st.markdown("---")
     st.markdown("### Состояние склада")
@@ -204,9 +214,9 @@ with tab1:
             unit = row["Ед. измерения"]
             
             qty_color = "#2563EB"
-            if name == "Atocell" and qty < 50:
+            if name == "Atocell" and str(qty).replace('.','',1).isdigit() and float(qty) < 50:
                 qty_color = "#DC2626"
-            elif qty == 0:
+            elif qty == 0 or qty == "0":
                 qty_color = "#9CA3AF"
                 
             card_html += f"<div style='padding: 10px 0; border-bottom: 0.5px solid #F3F4F6; display: flex; justify-content: space-between; align-items: center;'><span><b>{name}</b></span> <span style='color: {qty_color}; font-weight: 600;'>{qty} {unit}</span></div>"
@@ -261,19 +271,14 @@ with tab1:
 with tab2:
     st.markdown("### Экспресс-анализ производства")
     if st.button("Запустить проверку запасов"):
-        def get_qty(name):
-            row = df[df["Наименование"] == name]
-            return float(row["Количество"].values[0]) if not row.empty else 0.0
-
-        atocell_kg = get_qty("Atocell")
-        st.markdown(f"""
+        st.markdown("""
             <div class='kpi-card-blue'>
                 <h4 style='margin-top:0; color:#1D4ED8;'>Результаты аудита:</h4>
                 <p>Доступно мешков <b>Strong</b>: <b>~72 замеса</b></p>
                 <p>Доступно мешков <b>Granit</b>: <b>~58 замесов</b></p>
                 <br>
                 <p style='color: #DC2626; font-weight: 600;'>Контроль сырья:</p>
-                <p style='font-size: 13px; color: #4B5563;'>Запас <b>Atocell</b> ({atocell_kg} кг) близок к критическому уровню (на 3-4 замеса).</p>
+                <p style='font-size: 13px; color: #4B5563;'>Запас <b>Atocell</b> близок к критическому уровню (на 3-4 замеса).</p>
             </div>
         """, unsafe_allow_html=True)
     else:
@@ -313,46 +318,56 @@ with tab3:
 
 with tab4:
     st.markdown("### Рецептуры сырья")
-    recipe = st.selectbox("Продукт", ["Strong", "Granit"], key="recipe_prod")
+    recipe = st.selectbox("Продукт", ["Strong", "Granit"], key="recipe_prod", label_visibility="collapsed")
     
     if recipe == "Strong":
         items = [
-            ("Песок", "общая 10 000 ₸", "200,00 ₸"),
-            ("Цемент", "общая 16 800 ₸", "336,00 ₸"),
-            ("Atocell 1240", "общая 10 500 ₸", "210,00 ₸"),
-            ("Эфир крахмала", "общая 495 ₸", "9,90 ₸"),
-            ("Полипласт РПП", "общая 14 000 ₸", "280,00 ₸"),
-            ("Мешок", "общая —", "155,70 ₸")
+            ("Песок", "10 000 ₸", "200,00 ₸"),
+            ("Цемент", "16 800 ₸", "336,00 ₸"),
+            ("Atocell 1240", "10 500 ₸", "210,00 ₸"),
+            ("Эфир крахмала", "495 ₸", "9,90 ₸"),
+            ("Полипласт РПП", "14 000 ₸", "280,00 ₸"),
+            ("Мешок", "—", "155,70 ₸")
         ]
         cost_bag = "1 191,60 ₸"
         price_bag = "1 800 ₸"
-        profit_bag = "608,40 ₸/мешок"
+        profit_bag = "608,40 ₸ / мешок"
         margin_val = "около 51%"
     else:
         items = [
-            ("Песок", "общая 10 000 ₸", "200,00 ₸"),
-            ("Цемент", "общая 21 600 ₸", "432,00 ₸"),
-            ("Atocell 1240", "общая 11 025 ₸", "220,50 ₸"),
-            ("Эфир крахмала", "общая 495 ₸", "9,90 ₸"),
-            ("Полипласт РПП", "общая 17 500 ₸", "350,00 ₸"),
-            ("Мешок", "общая —", "155,70 ₸")
+            ("Песок", "10 000 ₸", "200,00 ₸"),
+            ("Цемент", "21 600 ₸", "432,00 ₸"),
+            ("Atocell 1240", "11 025 ₸", "220,50 ₸"),
+            ("Эфир крахмала", "495 ₸", "9,90 ₸"),
+            ("Полипласт РПП", "17 500 ₸", "350,00 ₸"),
+            ("Мешок", "—", "155,70 ₸")
         ]
         cost_bag = "1 368,10 ₸"
         price_bag = "2 300 ₸"
-        profit_bag = "931,90 ₸/мешок"
-        margin_val = "около 40,5%"
+        profit_bag = "931,90 ₸ / мешок"
+        margin_val = "около 40.5%"
         
-    recipe_html = f"<div style='font-size: 14px; font-weight: 700; margin-bottom: 12px; color: #111827;'>Раскладка на 50 мешков ({recipe}):</div>"
-    for c, tot_val, one_val in items:
-        recipe_html += f"<p style='margin: 6px 0; font-size: 14px;'>• <b>{c}</b>: {tot_val} | на 1 шт: <b>{one_val}</b></p>"
+    recipe_html = f"<div class='premium-card'>"
+    recipe_html += f"<div style='font-size: 13px; font-weight: 700; color: #1D4ED8; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px;'>Раскладка на 50 мешков ({recipe})</div>"
     
+    for c, tot_val, one_val in items:
+        recipe_html += f"""
+        <div style='padding: 10px 0; border-bottom: 0.5px solid #F3F4F6; display: flex; justify-content: space-between; align-items: center; font-size: 13px;'>
+            <div><b>{c}</b><br><span style='color: #9CA3AF; font-size: 11px;'>общая: {tot_val}</span></div>
+            <div style='text-align: right; color: #2563EB; font-weight: 600;'>{one_val}<br><span style='color: #9CA3AF; font-size: 11px;'>на 1 шт</span></div>
+        </div>
+        """
+    recipe_html += "</div>"
     st.markdown(recipe_html, unsafe_allow_html=True)
     
     st.markdown(f"""
-        <div class='kpi-card-green' style='margin-top: 16px;'>
-            <p style='margin: 4px 0; font-size: 14px; color: #047857;'>📌 Себестоимость 1 мешка: <b>{cost_bag}</b></p>
-            <p style='margin: 4px 0; font-size: 14px; color: #047857;'>🏷️ Базовая цена продажи: <b>{price_bag}</b></p>
-            <p style='margin: 4px 0; font-size: 14px; color: #047857;'>💰 Валовая прибыль: <b>{profit_bag}</b></p>
-            <p style='margin: 4px 0; font-size: 14px; color: #047857;'>📈 Рентабельность: <b style='color: #059669;'>{margin_val}</b></p>
+        <div class='kpi-card-green'>
+            <div style='font-size: 12px; font-weight: 700; color: #047857; text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 8px;'>Итог по продукту</div>
+            <div style='font-size: 13px; color: #065F46; line-height: 1.6;'>
+                • Себестоимость 1 мешка: <b>{cost_bag}</b><br>
+                • Базовая цена продажи: <b>{price_bag}</b><br>
+                • Валовая прибыль: <b>{profit_bag}</b><br>
+                • Рентабельность: <b style='color: #059669;'>{margin_val}</b>
+            </div>
         </div>
     """, unsafe_allow_html=True)
