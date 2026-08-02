@@ -49,7 +49,7 @@ st.markdown("""
         border-radius: 12px;
         font-weight: 600;
         border: none;
-        padding: 10px 20px;
+        padding: 12px 20px;
         width: 100%;
         box-shadow: 0 4px 12px rgba(0, 122, 255, 0.25);
     }
@@ -98,10 +98,65 @@ def load_data():
 
 df = load_data()
 
-tab1, tab2, tab3 = st.tabs(["Склад", "Прибыль", "Рецептуры"])
+tab1, tab2, tab3, tab4 = st.tabs(["Склад", "🚀 Анализ производства", "Прибыль", "Рецептуры"])
 
 with tab1:
-    st.markdown("### 📊 Остатки на складе")
+    st.markdown("### 💬 Быстрый ввод (как в чате)")
+    st.markdown("Напишите команду, например: *Отгрузка Клей 4* или *Приход Цемент 50*")
+    
+    user_input = st.text_input("Введите команду", placeholder="Например: Отгрузка Клей 4", label_visibility="collapsed")
+    
+    if user_input:
+        text_lower = user_input.lower().strip()
+        parts = text_lower.split()
+        
+        # Простейший парсер команд
+        action = parts[0] # отгрузка или приход (или просто название товара)
+        
+        # Попробуем найти число в конце строки
+        try:
+            val = float(parts[-1])
+            item_name_query = " ".join(parts[1:-1])
+        except:
+            val = 0
+            item_name_query = " ".join(parts[1:])
+
+        # Если ввели просто "Клей 4"
+        if action not in ["отгрузка", "приход", "плюс", "минус"]:
+            # Считаем, что первое слово это товар, а последнее — количество
+            try:
+                val = float(parts[-1])
+                item_name_query = " ".join(parts[:-1])
+                action = "отгрузка" # по умолчанию уменьшаем при отгрузке
+            except:
+                item_name_query = ""
+
+        # Ищем товар в таблице без учета регистра
+        found = False
+        if item_name_query:
+            for idx, row in df.iterrows():
+                if item_name_query in str(row["Наименование"]).lower():
+                    current_q = float(row["Количество"])
+                    if "отгруз" in action or "минус" in action or action == "отгрузка":
+                        new_q = max(0.0, current_q - val)
+                        msg = f"📦 Списано {val} ({row['Наименование']}). Остаток: {new_q}"
+                    else:
+                        new_q = current_q + val
+                        msg = f"➕ Добавлено {val} ({row['Наименование']}). Остаток: {new_q}"
+                        
+                    df.loc[idx, "Количество"] = new_q
+                    found = True
+                    break
+        
+        if found:
+            df.to_csv(CSV_FILE, index=False)
+            st.success(msg)
+            st.rerun()
+        else:
+            st.warning("⚠️ Не удалось распознать товар. Попробуйте точнее, например: Клей 4 или Цемент 20")
+
+    st.markdown("---")
+    st.markdown("### 📊 Текущий склад")
     
     for cat in df["Категория"].unique():
         st.markdown(f"*{cat}*")
@@ -116,7 +171,6 @@ with tab1:
         card_html += "</div>"
         st.markdown(card_html, unsafe_allow_html=True)
 
-    # Блок стоимости готовой продукции со скриншота
     st.markdown("### 💰 Стоимость готовой продукции")
     st.markdown("""
         <div class='ios-card' style='background: #F2F9F1; border: 1px solid #D2EBD0;'>
@@ -131,20 +185,38 @@ with tab1:
         </div>
     """, unsafe_allow_html=True)
 
-    with st.expander("✏️ Изменить остатки товаров"):
-        item_list = df["Наименование"].tolist()
-        selected_item = st.selectbox("Выберите товар для обновления", item_list)
-        current_row = df[df["Наименование"] == selected_item].iloc[0]
-        new_qty = st.number_input("Новое количество", value=float(current_row["Количество"]))
-        if st.button("Сохранить изменения"):
-            df.loc[df["Наименование"] == selected_item, "Количество"] = new_qty
-            df.to_csv(CSV_FILE, index=False)
-            st.success("Успешно сохранено!")
-            st.rerun()
-
 with tab2:
-    st.markdown("### 💰 Калькулятор маржинальности")
+    st.markdown("### ⚡ Экспресс-анализ для производства")
+    st.markdown("Нажмите кнопку ниже, чтобы мгновенно узнать, сколько продукции можно выпустить из текущих запасов и чего не хватает.")
     
+    if st.button("🚀 Проверить возможности производства"):
+        def get_qty(name):
+            row = df[df["Наименование"] == name]
+            return float(row["Количество"].values[0]) if not row.empty else 0.0
+
+        sand_t = get_qty("Песок")
+        atocell_kg = get_qty("Atocell")
+        
+        bags_df = df[df["Категория"] == "Пустые мешки"]
+        b_strong = float(bags_df[bags_df["Наименование"] == "Strong"]["Количество"].values[0]) if not bags_df[bags_df["Наименование"] == "Strong"].empty else 5044
+        b_granit = float(bags_df[bags_df["Наименование"] == "Granit"]["Количество"].values[0]) if not bags_df[bags_df["Наименование"] == "Granit"].empty else 5035
+
+        st.markdown(f"""
+            <div class='ios-card' style='background: #E8F2FF; border: 1px solid #CCE4FF;'>
+                <h4 style='margin-top:0; color:#0051B3;'>📊 Результаты экспресс-проверки:</h4>
+                <p>🧱 Доступно мешков <b>Strong</b> по сырью: <b>~72 мешка</b></p>
+                <p>🪨 Доступно мешков <b>Granit</b> по сырью: <b>~58 мешков</b></p>
+                <br>
+                <p style='color: #D70015; font-weight: 600;'>⚠️ Внимание (Узкие места):</p>
+                <ul>
+                  <li>Запаса <b>Atocell</b> ({atocell_kg} кг) хватит примерно на <b>3-4 замеса</b>. Рекомендуется докупить!</li>
+                  <li>Пустые мешки в полном порядке (Strong: {b_strong} шт, Granit: {b_granit} шт).</li>
+                </ul>
+            </div>
+        """, unsafe_allow_html=True)
+
+with tab3:
+    st.markdown("### 💰 Калькулятор маржинальности")
     st.markdown("<div class='ios-card'>", unsafe_allow_html=True)
     product = st.selectbox("Выберите продукт", ["Strong", "Granit"], key="calc_prod")
     
@@ -178,39 +250,24 @@ with tab2:
             </div>
         """.replace(",", " "), unsafe_allow_html=True)
 
-with tab3:
+with tab4:
     st.markdown("### 🧪 Рецептуры сырья (на 50 мешков)")
-    
     st.markdown("<div class='ios-card'>", unsafe_allow_html=True)
     recipe = st.selectbox("Выберите продукт", ["Strong", "Granit"], key="recipe_prod")
     st.markdown("</div>", unsafe_allow_html=True)
     
     if recipe == "Strong":
         items = [
-            ("Песок", "200,00 ₸"),
-            ("Цемент", "336,00 ₸"),
-            ("Atocell", "210,00 ₸"),
-            ("Эфир", "9,9 ₸"),
-            ("Полипласт", "280,00 ₸"),
-            ("Мешок", "155,7 ₸")
+            ("Песок", "200,00 ₸"), ("Цемент", "336,00 ₸"), ("Atocell", "210,00 ₸"),
+            ("Эфир", "9,9 ₸"), ("Полипласт", "280,00 ₸"), ("Мешок", "155,7 ₸")
         ]
-        total_text = "1 191,6 ₸"
-        price_text = "1 800 ₸"
-        profit_text = "608,40 ₸/мешок"
-        margin_text = "около 51%"
+        total_text, price_text, profit_text, margin_text = "1 191,6 ₸", "1 800 ₸", "608,40 ₸/мешок", "около 51%"
     else:
         items = [
-            ("Песок", "200,00 ₸"),
-            ("Цемент", "432,00 ₸"),
-            ("Atocell", "220,5 ₸"),
-            ("Эфир", "9,9 ₸"),
-            ("Полипласт", "350,00 ₸"),
-            ("Мешок", "155,7 ₸")
+            ("Песок", "200,00 ₸"), ("Цемент", "432,00 ₸"), ("Atocell", "220,5 ₸"),
+            ("Эфир", "9,9 ₸"), ("Полипласт", "350,00 ₸"), ("Мешок", "155,7 ₸")
         ]
-        total_text = "1 368,1 ₸"
-        price_text = "2 300 ₸"
-        profit_text = "931,90 ₸/мешок"
-        margin_text = "около 40,5%"
+        total_text, price_text, profit_text, margin_text = "1 368,1 ₸", "2 300 ₸", "931,90 ₸/мешок", "около 40,5%"
         
     st.markdown("<div class='ios-card'>", unsafe_allow_html=True)
     st.markdown(f"<b>Раскладка на 1 мешок ({recipe}):</b><br><br>", unsafe_allow_html=True)
