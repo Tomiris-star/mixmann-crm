@@ -1,16 +1,14 @@
 import streamlit as st
 import pandas as pd
 import os
-from datetime import datetime, timedelta
+from datetime import datetime
 
 st.set_page_config(page_title="Mixmann CRM", page_icon="⚡", layout="centered")
 
-# Премиальный светлый минимализм с компактизированными отступами и градиентными KPI везде
 st.markdown("""
     <style>
-    /* Убираем лишние отступы сверху и снизу для идеального вида на смартфоне */
     .block-container {
-        padding-top: 1.2rem !important;
+        padding-top: 3.2rem !important;
         padding-bottom: 1.5rem !important;
     }
     h1 {
@@ -215,14 +213,12 @@ with tab1:
         card_html += "</div>"
         st.markdown(card_html, unsafe_allow_html=True)
 
-    # Журнал операций с фильтром по периодам
     st.markdown("### История операций")
-    
     if os.path.exists(LOG_FILE):
         logs_df = pd.read_csv(LOG_FILE)
         logs_df["ParsedDate"] = pd.to_datetime(logs_df["Дата"], format="%d.%m.%Y %H:%M", errors="coerce")
         
-        col_f1, col_f2 = st.columns([2, 2])
+        col_f1, _ = st.columns([2, 2])
         with col_f1:
             period_filter = st.selectbox("Период", ["Последние 20", "За текущий месяц", "За всё время"], label_visibility="collapsed")
         
@@ -316,20 +312,47 @@ with tab3:
         """.replace(",", " "), unsafe_allow_html=True)
 
 with tab4:
-    st.markdown("### Рецептурная карта")
-    recipe = st.selectbox("Рецепт", ["Strong", "Granit"], key="recipe_prod")
+    st.markdown("### Рецептуры сырья")
+    recipe = st.selectbox("Продукт", ["Strong", "Granit"], key="recipe_prod")
     
     if recipe == "Strong":
-        items = [("Песок", "200,00 ₸"), ("Цемент", "336,00 ₸"), ("Atocell", "210,00 ₸"), ("Эфир", "9,9 ₸"), ("Полипласт", "280,00 ₸"), ("Мешок", "155,7 ₸")]
-        tot, prc = "1 191,6 ₸", "1 800 ₸"
+        items = [
+            ("Песок", "общая 10 000 ₸", "200,00 ₸"),
+            ("Цемент", "общая 16 800 ₸", "336,00 ₸"),
+            ("Atocell 1240", "общая 10 500 ₸", "210,00 ₸"),
+            ("Эфир крахмала", "общая 495 ₸", "9,90 ₸"),
+            ("Полипласт РПП", "общая 14 000 ₸", "280,00 ₸"),
+            ("Мешок", "общая —", "155,70 ₸")
+        ]
+        cost_bag = "1 191,60 ₸"
+        price_bag = "1 800 ₸"
+        profit_bag = "608,40 ₸/мешок"
+        margin_val = "около 51%"
     else:
-        items = [("Песок", "200,00 ₸"), ("Цемент", "432,00 ₸"), ("Atocell", "220,5 ₸"), ("Эфир", "9,9 ₸"), ("Полипласт", "350,00 ₸"), ("Мешок", "155,7 ₸")]
-        tot, prc = "1 368,1 ₸", "2 300 ₸"
+        items = [
+            ("Песок", "общая 10 000 ₸", "200,00 ₸"),
+            ("Цемент", "общая 21 600 ₸", "432,00 ₸"),
+            ("Atocell 1240", "общая 11 025 ₸", "220,50 ₸"),
+            ("Эфир крахмала", "общая 495 ₸", "9,90 ₸"),
+            ("Полипласт РПП", "общая 17 500 ₸", "350,00 ₸"),
+            ("Мешок", "общая —", "155,70 ₸")
+        ]
+        cost_bag = "1 368,10 ₸"
+        price_bag = "2 300 ₸"
+        profit_bag = "931,90 ₸/мешок"
+        margin_val = "около 40,5%"
         
-    recipe_html = "<div class='kpi-card-blue'>"
-    recipe_html += f"<div style='font-size: 14px; font-weight: 700; color: #1D4ED8; margin-bottom: 10px;'>Рецептура: {recipe}</div>"
-    for c, p in items:
-        recipe_html += f"<div style='padding: 6px 0; border-bottom: 0.5px solid rgba(59,130,246,0.1); display: flex; justify-content: space-between;'><span><b>{c}</b></span> <span style='color: #2563EB;'>{p}</span></div>"
-    recipe_html += f"<div style='margin-top: 12px; font-size: 14px;'>Себестоимость: <b>{tot}</b> | Цена: <b style='color: #059669;'>{prc}</b></div>"
-    recipe_html += "</div>"
+    recipe_html = f"<div style='font-size: 14px; font-weight: 700; margin-bottom: 12px; color: #111827;'>Раскладка на 50 мешков ({recipe}):</div>"
+    for c, tot_val, one_val in items:
+        recipe_html += f"<p style='margin: 6px 0; font-size: 14px;'>• <b>{c}</b>: {tot_val} | на 1 шт: <b>{one_val}</b></p>"
+    
     st.markdown(recipe_html, unsafe_allow_html=True)
+    
+    st.markdown(f"""
+        <div class='kpi-card-green' style='margin-top: 16px;'>
+            <p style='margin: 4px 0; font-size: 14px; color: #047857;'>📌 Себестоимость 1 мешка: <b>{cost_bag}</b></p>
+            <p style='margin: 4px 0; font-size: 14px; color: #047857;'>🏷️ Базовая цена продажи: <b>{price_bag}</b></p>
+            <p style='margin: 4px 0; font-size: 14px; color: #047857;'>💰 Валовая прибыль: <b>{profit_bag}</b></p>
+            <p style='margin: 4px 0; font-size: 14px; color: #047857;'>📈 Рентабельность: <b style='color: #059669;'>{margin_val}</b></p>
+        </div>
+    """, unsafe_allow_html=True)
