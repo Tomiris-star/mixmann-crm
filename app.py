@@ -64,20 +64,34 @@ def load_data():
     if os.path.exists(CSV_FILE):
         try:
             df = pd.read_csv(CSV_FILE)
-            # Проверяем, есть ли нужные колонки, если нет — сбрасываем до дефолта
             if "Категория" not in df.columns or "Наименование" not in df.columns:
                 raise Exception("Bad columns")
             return df
         except:
             pass
     
-    # Создаем файл заново, если его нет или он поврежден
+    # Полная актуальная база данных со скриншотов
     data = {
-        "Категория": ["Готовая продукция", "Готовая продукция", "Сырьё и материалы", "Пустые мешки"],
-        "Наименование": ["Strong", "Клей", "Песок", "ШВС"],
-        "Количество": [24, 4, 21, 3702],
-        "Ед. измерения": ["мешка", "п (поддонов)", "т", "шт"],
-        "Стоимость/Примечание": ["43.200 тг", "230.400 тг", "0 тг", "0 тг"]
+        "Категория": [
+            "Готовая продукция", "Готовая продукция", "Готовая продукция", "Готовая продукция", "Готовая продукция", "Готовая продукция",
+            "Сырьё и материалы", "Сырьё и материалы", "Сырьё и материалы", "Сырьё и материалы", "Сырьё и материалы", "Сырьё и материалы", "Сырьё и материалы", "Сырьё и материалы", "Сырьё и материалы",
+            "Пустые мешки", "Пустые мешки", "Пустые мешки", "Пустые мешки", "Пустые мешки"
+        ],
+        "Наименование": [
+            "Стяжка", "ШВС", "Клей", "Клей (кызыл)", "Клей (оранжевый)", "Strong",
+            "Песок", "Цемент", "Atocell", "Полипласт 2032", "Стекловолокно", "Беролан", "Отработка", "Стрейч-плёнка", "Рулон",
+            "ШВС", "Клей", "Стяжка", "Granit", "Strong"
+        ],
+        "Количество": [
+            0, 19, 15, 0, 0, 24,
+            22, 494, 173.1, 100, 24, 48.8, 8, 40, 2,
+            2118, 1018, 5025, 5035, 5044
+        ],
+        "Ед. измерения": [
+            "мешков", "п", "п + 15 мешков", "мешков", "мешков", "мешка",
+            "т", "мешков (16п + 14м)", "кг", "кг", "кг", "кг", "бочек", "шт", "шт",
+            "шт", "шт", "шт", "шт", "шт"
+        ]
     }
     df = pd.DataFrame(data)
     df.to_csv(CSV_FILE, index=False)
@@ -99,7 +113,7 @@ with tab1:
             name = row["Наименование"]
             qty = row["Количество"]
             unit = row["Ед. измерения"]
-            card_html += f"<div style='padding: 6px 0; border-bottom: 0.5px solid #F2F2F7;'><b>{name}</b> <span style='float: right; color: #007AFF; font-weight: 600;'>{qty} {unit}</span></div>"
+            card_html += f"<div style='padding: 8px 0; border-bottom: 0.5px solid #F2F2F7;'><b>{name}</b> <span style='float: right; color: #007AFF; font-weight: 600;'>{qty} {unit}</span></div>"
         card_html += "</div>"
         st.markdown(card_html, unsafe_allow_html=True)
 
@@ -118,7 +132,7 @@ with tab2:
     st.markdown("### 💰 Калькулятор маржинальности")
     
     st.markdown("<div class='ios-card'>", unsafe_allow_html=True)
-    product = st.selectbox("Выберите продукт", ["Strong", "Granit"])
+    product = st.selectbox("Выберите продукт", ["Strong", "Granit"], key="calc_prod")
     
     if product == "Strong":
         cost_per_bag = 1191.60
@@ -151,45 +165,48 @@ with tab2:
         """.replace(",", " "), unsafe_allow_html=True)
 
 with tab3:
-    st.markdown("### 🧪 Рецептуры сырья")
-    recipe = st.selectbox("Продукт", ["Strong", "Granit"])
+    st.markdown("### 🧪 Рецептуры сырья (на 50 мешков)")
+    
+    st.markdown("<div class='ios-card'>", unsafe_allow_html=True)
+    recipe = st.selectbox("Выберите продукт", ["Strong", "Granit"], key="recipe_prod")
+    st.markdown("</div>", unsafe_allow_html=True)
     
     if recipe == "Strong":
         items = [
-            ("Песок", "10 000 ₸", "200,00 ₸"),
-            ("Цемент", "16 800 ₸", "336,00 ₸"),
-            ("Atocell 1240", "10 500 ₸", "210,00 ₸"),
-            ("Эфир крахмала", "495 ₸", "9,90 ₸"),
-            ("Полипласт РПП", "14 000 ₸", "280,00 ₸"),
-            ("Мешок", "—", "155,70 ₸")
+            ("Песок", "200,00 ₸"),
+            ("Цемент", "336,00 ₸"),
+            ("Atocell", "210,00 ₸"),
+            ("Эфир", "9,9 ₸"),
+            ("Полипласт", "280,00 ₸"),
+            ("Мешок", "155,7 ₸")
         ]
-        total_text = "1 191,60 ₸"
+        total_text = "1 191,6 ₸"
         price_text = "1 800 ₸"
         profit_text = "608,40 ₸/мешок"
         margin_text = "около 51%"
     else:
         items = [
-            ("Песок", "10 000 ₸", "200,00 ₸"),
-            ("Цемент", "21 600 ₸", "432,00 ₸"),
-            ("Atocell 1240", "11 025 ₸", "220,50 ₸"),
-            ("Эфир крахмала", "495 ₸", "9,90 ₸"),
-            ("Полипласт РПП", "17 500 ₸", "350,00 ₸"),
-            ("Мешок", "—", "155,70 ₸")
+            ("Песок", "200,00 ₸"),
+            ("Цемент", "432,00 ₸"),
+            ("Atocell", "220,5 ₸"),
+            ("Эфир", "9,9 ₸"),
+            ("Полипласт", "350,00 ₸"),
+            ("Мешок", "155,7 ₸")
         ]
-        total_text = "1 368,10 ₸"
+        total_text = "1 368,1 ₸"
         price_text = "2 300 ₸"
         profit_text = "931,90 ₸/мешок"
         margin_text = "около 40,5%"
         
     st.markdown("<div class='ios-card'>", unsafe_allow_html=True)
-    st.markdown(f"<b>Раскладка на 50 мешков ({recipe}):</b><br><br>", unsafe_allow_html=True)
-    for comp, total_c, bag_c in items:
-        st.markdown(f"• <b>{comp}</b>: <span style='color: #666;'>общая {total_c}</span> | на 1 шт: <b>{bag_c}</b>", unsafe_allow_html=True)
+    st.markdown(f"<b>Раскладка на 1 мешок ({recipe}):</b><br><br>", unsafe_allow_html=True)
+    for comp, bag_c in items:
+        st.markdown(f"• <b>{comp}</b>: <span style='color: #007AFF; font-weight: 600;'>{bag_c}</span>", unsafe_allow_html=True)
     st.markdown("</div>", unsafe_allow_html=True)
     
     st.markdown(f"""
         <div class='ios-card' style='background: #F2F9F1; border: 1px solid #D2EBD0;'>
-            <p>📌 Себестоимость 1 мешка: <b>{total_text}</b></p>
+            <p>📌 Итого себестоимость 1 мешка: <b>{total_text}</b></p>
             <p>🏷️ Базовая цена продажи: <b>{price_text}</b></p>
             <p>💰 Валовая прибыль: <b style='color: #248A3D;'>{profit_text}</b></p>
             <p>📈 Рентабельность: <b style='color: #007AFF;'>{margin_text}</b></p>
