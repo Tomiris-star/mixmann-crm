@@ -5,15 +5,24 @@ from datetime import datetime, timedelta
 
 st.set_page_config(page_title="Mixmann CRM", page_icon="⚡", layout="centered")
 
-# Премиальный светлый минимализм с идеальной читаемостью
+# Премиальный светлый минимализм с компактизированными отступами и градиентными KPI везде
 st.markdown("""
     <style>
+    /* Убираем лишние отступы сверху и снизу для идеального вида на смартфоне */
+    .block-container {
+        padding-top: 1.2rem !important;
+        padding-bottom: 1.5rem !important;
+    }
+    h1 {
+        padding-top: 0px !important;
+        margin-bottom: 10px !important;
+    }
     .stApp {
         background-color: #F4F5F7;
         font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Helvetica Neue", sans-serif;
         color: #1F2937;
     }
-    h1, h2, h3 {
+    h2, h3 {
         color: #111827;
         font-weight: 700;
         letter-spacing: -0.5px;
@@ -26,28 +35,28 @@ st.markdown("""
         margin-bottom: 16px;
         border: 1px solid rgba(0, 0, 0, 0.04);
     }
-    .premium-card-green {
-        background: linear-gradient(135.84deg, #F0FDF4 0%, #FFFFFF 100%);
-        padding: 20px 22px;
-        border-radius: 18px;
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+    .kpi-card-green {
+        background: linear-gradient(135deg, #F0FDF4 0%, #DCFCE7 100%);
+        padding: 22px 24px;
+        border-radius: 20px;
+        box-shadow: 0 10px 25px -5px rgba(16, 185, 129, 0.1);
         margin-bottom: 16px;
-        border: 1px solid rgba(16, 185, 129, 0.15);
+        border: 1px solid rgba(16, 185, 129, 0.2);
     }
-    .premium-card-blue {
-        background: linear-gradient(135.84deg, #EFF6FF 0%, #FFFFFF 100%);
-        padding: 20px 22px;
-        border-radius: 18px;
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+    .kpi-card-blue {
+        background: linear-gradient(135deg, #EFF6FF 0%, #DBEAFE 100%);
+        padding: 22px 24px;
+        border-radius: 20px;
+        box-shadow: 0 10px 25px -5px rgba(37, 99, 235, 0.1);
         margin-bottom: 16px;
-        border: 1px solid rgba(59, 130, 246, 0.15);
+        border: 1px solid rgba(59, 130, 246, 0.2);
     }
     .stTabs [data-baseweb="tab-list"] {
         gap: 8px;
         background-color: #E5E7EB;
         padding: 6px;
         border-radius: 16px;
-        margin-bottom: 24px;
+        margin-bottom: 20px;
     }
     .stTabs [data-baseweb="tab"] {
         background-color: transparent;
@@ -196,7 +205,6 @@ with tab1:
             qty = row["Количество"]
             unit = row["Ед. измерения"]
             
-            # Индикатор критических остатков
             qty_color = "#2563EB"
             if name == "Atocell" and qty < 50:
                 qty_color = "#DC2626"
@@ -212,7 +220,6 @@ with tab1:
     
     if os.path.exists(LOG_FILE):
         logs_df = pd.read_csv(LOG_FILE)
-        
         logs_df["ParsedDate"] = pd.to_datetime(logs_df["Дата"], format="%d.%m.%Y %H:%M", errors="coerce")
         
         col_f1, col_f2 = st.columns([2, 2])
@@ -224,7 +231,6 @@ with tab1:
             logs_df = logs_df[(logs_df["ParsedDate"].dt.month == now.month) & (logs_df["ParsedDate"].dt.year == now.year)]
         
         log_html = "<div class='premium-card' style='max-height: 250px; overflow-y: auto;'>"
-        
         display_df = logs_df.head(20) if period_filter == "Последние 20" else logs_df
         
         if display_df.empty:
@@ -241,15 +247,18 @@ with tab1:
 
     st.markdown("### Оценка готовой продукции")
     st.markdown("""
-        <div class='premium-card-green'>
-            <div style='padding: 8px 0; border-bottom: 0.5px solid #E5E7EB; display: flex; justify-content: space-between;'><span>Стяжка:</span> <b>0 ₸</b></div>
-            <div style='padding: 8px 0; border-bottom: 0.5px solid #E5E7EB; display: flex; justify-content: space-between;'><span>ШВС:</span> <b style='color: #059669;'>1 094 400 ₸</b></div>
-            <div style='padding: 8px 0; border-bottom: 0.5px solid #E5E7EB; display: flex; justify-content: space-between;'><span>Клей:</span> <b style='color: #059669;'>478 800 ₸</b></div>
-            <div style='padding: 8px 0; display: flex; justify-content: space-between;'><span>Strong:</span> <b style='color: #059669;'>43 200 ₸</b></div>
+        <div class='kpi-card-green'>
+            <div style='font-size: 12px; font-weight: 700; color: #047857; text-transform: uppercase; letter-spacing: 0.8px;'>Общая стоимость склада</div>
+            <div style='font-size: 28px; font-weight: 800; color: #065F46; margin-top: 6px;'>1 616 400 ₸</div>
+            <div style='font-size: 12px; color: #059669; margin-top: 4px;'>Оценка готовой продукции по себестоимости</div>
         </div>
-        <div class='premium-card-blue' style='text-align: center;'>
-            <div style='font-size: 13px; color: #4B5563; text-transform: uppercase; letter-spacing: 1px;'>Общая стоимость</div>
-            <div style='font-size: 26px; font-weight: 800; color: #2563EB; margin-top: 6px;'>1 616 400 ₸</div>
+        <div class='kpi-card-blue'>
+            <div style='font-size: 12px; font-weight: 700; color: #1D4ED8; text-transform: uppercase; letter-spacing: 0.8px;'>Структура запасов</div>
+            <div style='margin-top: 8px; font-size: 14px; color: #1F2937;'>
+                • ШВС: <b style='color: #059669;'>1 094 400 ₸</b><br>
+                • Клей: <b style='color: #059669;'>478 800 ₸</b><br>
+                • Strong: <b style='color: #059669;'>43 200 ₸</b>
+            </div>
         </div>
     """, unsafe_allow_html=True)
 
@@ -262,13 +271,19 @@ with tab2:
 
         atocell_kg = get_qty("Atocell")
         st.markdown(f"""
-            <div class='premium-card-blue'>
-                <h4 style='margin-top:0; color:#2563EB;'>Результаты аудита:</h4>
+            <div class='kpi-card-blue'>
+                <h4 style='margin-top:0; color:#1D4ED8;'>Результаты аудита:</h4>
                 <p>Доступно мешков <b>Strong</b>: <b>~72 замеса</b></p>
                 <p>Доступно мешков <b>Granit</b>: <b>~58 замесов</b></p>
                 <br>
                 <p style='color: #DC2626; font-weight: 600;'>Контроль сырья:</p>
                 <p style='font-size: 13px; color: #4B5563;'>Запас <b>Atocell</b> ({atocell_kg} кг) близок к критическому уровню (на 3-4 замеса).</p>
+            </div>
+        """, unsafe_allow_html=True)
+    else:
+        st.markdown("""
+            <div class='premium-card' style='text-align: center; color: #6B7280; font-size: 13px;'>
+                Нажмите кнопку выше, чтобы выполнить аудит доступных замесов и проверить сырье.
             </div>
         """, unsafe_allow_html=True)
 
@@ -290,11 +305,13 @@ with tab3:
         profit = rev - cost
         margin = ((selling_price - cost_per_bag) / cost_per_bag) * 100
         st.markdown(f"""
-            <div class='premium-card-blue'>
-                <p>Выручка: <b>{rev:,.2f} ₸</b></p>
-                <p>Затраты: <b>{cost:,.2f} ₸</b></p>
-                <p>Прибыль: <b style='color: #059669;'>{profit:,.2f} ₸</b></p>
-                <p>Маржа: <b style='color: #2563EB;'>{margin:.1f}%</b></p>
+            <div class='kpi-card-green'>
+                <div style='font-size: 12px; font-weight: 700; color: #047857; text-transform: uppercase; letter-spacing: 0.8px;'>Результат расчета</div>
+                <div style='font-size: 26px; font-weight: 800; color: #065F46; margin-top: 6px;'>{profit:,.2f} ₸</div>
+                <div style='font-size: 13px; color: #059669; margin-top: 6px;'>
+                    Выручка: <b>{rev:,.2f} ₸</b> | Затраты: <b>{cost:,.2f} ₸</b><br>
+                    Маржинальность: <b>{margin:.1f}%</b>
+                </div>
             </div>
         """.replace(",", " "), unsafe_allow_html=True)
 
@@ -309,7 +326,10 @@ with tab4:
         items = [("Песок", "200,00 ₸"), ("Цемент", "432,00 ₸"), ("Atocell", "220,5 ₸"), ("Эфир", "9,9 ₸"), ("Полипласт", "350,00 ₸"), ("Мешок", "155,7 ₸")]
         tot, prc = "1 368,1 ₸", "2 300 ₸"
         
-    st.markdown("<div class='premium-card'>", unsafe_allow_html=True)
+    recipe_html = "<div class='kpi-card-blue'>"
+    recipe_html += f"<div style='font-size: 14px; font-weight: 700; color: #1D4ED8; margin-bottom: 10px;'>Рецептура: {recipe}</div>"
     for c, p in items:
-        st.markdown(f"• <b>{c}</b>: <span style='color: #2563EB;'>{p}</span>", unsafe_allow_html=True)
-    st.markdown(f"<br>Себестоимость: <b>{tot}</b> | Цена: <b>{prc}</b></div>", unsafe_allow_html=True)
+        recipe_html += f"<div style='padding: 6px 0; border-bottom: 0.5px solid rgba(59,130,246,0.1); display: flex; justify-content: space-between;'><span><b>{c}</b></span> <span style='color: #2563EB;'>{p}</span></div>"
+    recipe_html += f"<div style='margin-top: 12px; font-size: 14px;'>Себестоимость: <b>{tot}</b> | Цена: <b style='color: #059669;'>{prc}</b></div>"
+    recipe_html += "</div>"
+    st.markdown(recipe_html, unsafe_allow_html=True)
