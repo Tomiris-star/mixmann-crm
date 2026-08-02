@@ -4,30 +4,21 @@ import os
 
 st.set_page_config(page_title="Mixmann CRM", page_icon="📦", layout="centered")
 
-# Применяем стили Apple Health (карточки, шрифты, отступы)
+# Применяем стили интерфейса под iOS
 st.markdown("""
     <style>
-    /* Общий фон и шрифт */
     .stApp {
         background-color: #F2F2F7;
         font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", Helvetica, Arial, sans-serif;
     }
-    
-    /* Стилизация заголовков под iOS */
     h1, h2, h3 {
         color: #000000;
         font-weight: 700;
         letter-spacing: -0.5px;
     }
-
-    /* Карточки в стиле Apple (белый блок с легким скруглением) */
-    div.element-container {
-        margin-bottom: 0.5rem;
-    }
-    
-    /* Оформление вкладок */
+    /* Стилизация вкладок */
     .stTabs [data-baseweb="tab-list"] {
-        gap: 8px;
+        gap: 6px;
         background-color: #E5E5EA;
         padding: 4px;
         border-radius: 12px;
@@ -37,6 +28,7 @@ st.markdown("""
         border-radius: 8px;
         color: #3A3A3C;
         font-weight: 600;
+        font-size: 14px;
     }
     .stTabs [aria-selected="true"] {
         background-color: #FFFFFF !important;
@@ -72,30 +64,30 @@ tab1, tab2, tab3 = st.tabs(["Склад", "Прибыль", "Рецептуры"
 
 with tab1:
     st.markdown("### Сводка склада")
+    
+    # Выводим данные в виде красивых карточек-списков без таблиц
     if "Категория" in df.columns and "Наименование" in df.columns:
         categories = df["Категория"].unique()
         for cat in categories:
-            st.markdown(f"*{cat}*")
+            st.markdown(f"#### 🔹 {cat}")
             cat_items = df[df["Категория"] == cat]
             for _, row in cat_items.iterrows():
                 name = str(row.get("Наименование", ""))
                 qty = str(row.get("Количество", ""))
                 unit = str(row.get("Ед. измерения", ""))
-                st.markdown(f"- {name}: *{qty} {unit}*")
+                st.markdown(f"• *{name}*: {qty} {unit}")
             st.markdown("---")
-    else:
-        st.dataframe(df)
-
+    
     with st.expander("✏️ Изменить остатки"):
         item_list = df["Наименование"].tolist() if "Наименование" in df.columns else []
         if item_list:
             selected_item = st.selectbox("Выберите товар", item_list)
             current_row = df[df["Наименование"] == selected_item].iloc[0]
             new_qty = st.number_input("Новое количество", value=float(current_row.get("Количество", 0)))
-            if st.button("Сохранить"):
+            if st.button("Сохранить изменения"):
                 df.loc[df["Наименование"] == selected_item, "Количество"] = new_qty
                 df.to_csv(CSV_FILE, index=False)
-                st.success("Обновлено!")
+                st.success("Успешно обновлено!")
                 st.rerun()
 
 with tab2:
@@ -123,41 +115,50 @@ with tab2:
         margin = (profit_per_bag / cost_per_bag) * 100 if cost_per_bag > 0 else 0
         
         st.markdown("---")
-        st.markdown(f"- *Выручка:* {total_revenue:,.2f} ₸".replace(",", " "))
-        st.markdown(f"- *Себестоимость:* {total_cost:,.2f} ₸".replace(",", " "))
-        st.markdown(f"- *Чистая прибыль:* *{total_profit:,.2f} ₸*".replace(",", " "))
-        st.markdown(f"- *Прибыль с 1 мешка:* {profit_per_bag:,.2f} ₸".replace(",", " "))
-        st.markdown(f"- *Рентабельность:* *{margin:.1f}%*")
+        st.markdown(f"💵 Выручка: *{total_revenue:,.2f} ₸*".replace(",", " "))
+        st.markdown(f"📦 Себестоимость: *{total_cost:,.2f} ₸*".replace(",", " "))
+        st.markdown(f"💰 Чистая прибыль: *{total_profit:,.2f} ₸*".replace(",", " "))
+        st.markdown(f"📈 Прибыль с 1 мешка: *{profit_per_bag:,.2f} ₸*".replace(",", " "))
+        st.markdown(f"📊 Рентабельность: *{margin:.1f}%*")
 
 with tab3:
     st.markdown("### Рецептуры и сырьё")
     
-    recipe = st.selectbox("Выберите рецептуру", ["Strong", "Granit"])
+    recipe = st.selectbox("Выберите продукт", ["Strong", "Granit"])
     
     if recipe == "Strong":
-        df_rec = pd.DataFrame({
-            "Компонент": ["Песок", "Цемент", "Atocell 1240", "Эфир крахмала", "Полипласт РПП", "Мешок"],
-            "Общая стоимость": ["10 000 ₸", "16 800 ₸", "10 500 ₸", "495 ₸", "14 000 ₸", "—"],
-            "На 1 мешок": ["200,00 ₸", "336,00 ₸", "210,00 ₸", "9,90 ₸", "280,00 ₸", "155,70 ₸"]
-        })
+        items = [
+            ("Песок", "10 000 ₸", "200,00 ₸"),
+            ("Цемент", "16 800 ₸", "336,00 ₸"),
+            ("Atocell 1240", "10 500 ₸", "210,00 ₸"),
+            ("Эфир крахмала", "495 ₸", "9,90 ₸"),
+            ("Полипласт РПП", "14 000 ₸", "280,00 ₸"),
+            ("Мешок", "—", "155,70 ₸")
+        ]
         total_text = "1 191,60 ₸"
         price_text = "1 800 ₸"
         profit_text = "608,40 ₸/мешок"
         margin_text = "около 51%"
     else:
-        df_rec = pd.DataFrame({
-            "Компонент": ["Песок", "Цемент", "Atocell 1240", "Эфир крахмала", "Полипласт РПП", "Мешок"],
-            "Общая стоимость": ["10 000 ₸", "21 600 ₸", "11 025 ₸", "495 ₸", "17 500 ₸", "—"],
-            "На 1 мешок": ["200,00 ₸", "432,00 ₸", "220,50 ₸", "9,90 ₸", "350,00 ₸", "155,70 ₸"]
-        })
+        items = [
+            ("Песок", "10 000 ₸", "200,00 ₸"),
+            ("Цемент", "21 600 ₸", "432,00 ₸"),
+            ("Atocell 1240", "11 025 ₸", "220,50 ₸"),
+            ("Эфир крахмала", "495 ₸", "9,90 ₸"),
+            ("Полипласт РПП", "17 500 ₸", "350,00 ₸"),
+            ("Мешок", "—", "155,70 ₸")
+        ]
         total_text = "1 368,10 ₸"
         price_text = "2 300 ₸"
         profit_text = "931,90 ₸/мешок"
         margin_text = "около 40,5%"
     
-    st.table(df_rec)
-    st.markdown(f"*Себестоимость одного мешка:* {total_text}")
+    st.markdown(f"*Состав на 50 мешков ({recipe}):*")
+    for comp, total_c, bag_c in items:
+        st.markdown(f"- *{comp}: общая {total_c} | на 1 мешок: *{bag_c}**")
+    
     st.markdown("---")
-    st.markdown(f"Если цена *{recipe}* — *{price_text} / мешок*:തിന്")
+    st.markdown(f"📌 *Итого себестоимость 1 мешка:* *{total_text}*")
+    st.markdown(f"Если продавать по *{price_text}*: ")
     st.markdown(f"- Валовая прибыль: *{profit_text}*")
     st.markdown(f"- Рентабельность: *{margin_text}*")
