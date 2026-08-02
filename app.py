@@ -4,23 +4,17 @@ import os
 
 st.set_page_config(page_title="Mixmann CRM", page_icon="📦", layout="centered")
 
-# Премиальный дизайн в стиле iOS / Apple HIG с кастомными стилями карточек
 st.markdown("""
     <style>
-    /* Общий фон */
     .stApp {
         background-color: #F8F9FA;
         font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Helvetica Neue", sans-serif;
     }
-    
-    /* Заголовки */
     h1, h2, h3 {
         color: #1C1C1E;
         font-weight: 700;
         letter-spacing: -0.5px;
     }
-
-    /* Карточки-контейнеры */
     .ios-card {
         background: #FFFFFF;
         padding: 18px 20px;
@@ -29,17 +23,6 @@ st.markdown("""
         margin-bottom: 16px;
         border: 1px solid rgba(0, 0, 0, 0.04);
     }
-    
-    /* Таблицы рецептур */
-    .recipe-row {
-        display: flex;
-        justify-content: space-between;
-        padding: 8px 0;
-        border-bottom: 1px solid #F1F1F3;
-        font-size: 15px;
-    }
-
-    /* Настройка вкладок в стиле Apple Segmented Control */
     .stTabs [data-baseweb="tab-list"] {
         gap: 6px;
         background-color: #E4E4E6;
@@ -60,8 +43,6 @@ st.markdown("""
         color: #000000 !important;
         box-shadow: 0 3px 10px rgba(0,0,0,0.12);
     }
-
-    /* Кнопки */
     .stButton > button {
         background-color: #007AFF;
         color: white;
@@ -72,9 +53,6 @@ st.markdown("""
         width: 100%;
         box-shadow: 0 4px 12px rgba(0, 122, 255, 0.25);
     }
-    .stButton > button:hover {
-        background-color: #0062CC;
-    }
     </style>
 """, unsafe_allow_html=True)
 
@@ -84,18 +62,26 @@ CSV_FILE = "МойСклад - Склад.csv"
 
 def load_data():
     if os.path.exists(CSV_FILE):
-        return pd.read_csv(CSV_FILE)
-    else:
-        data = {
-            "Категория": ["Готовая продукция", "Готовая продукция", "Сырьё и материалы", "Пустые мешки"],
-            "Наименование": ["Strong", "Клей", "Песок", "ШВС"],
-            "Количество": [24, 4, 21, 3702],
-            "Ед. измерения": ["мешка", "п (поддонов)", "т", "шт"],
-            "Стоимость/Примечание": ["43.200 тг", "230.400 тг", "0 тг", "0 тг"]
-        }
-        df = pd.DataFrame(data)
-        df.to_csv(CSV_FILE, index=False)
-        return df
+        try:
+            df = pd.read_csv(CSV_FILE)
+            # Проверяем, есть ли нужные колонки, если нет — сбрасываем до дефолта
+            if "Категория" not in df.columns or "Наименование" not in df.columns:
+                raise Exception("Bad columns")
+            return df
+        except:
+            pass
+    
+    # Создаем файл заново, если его нет или он поврежден
+    data = {
+        "Категория": ["Готовая продукция", "Готовая продукция", "Сырьё и материалы", "Пустые мешки"],
+        "Наименование": ["Strong", "Клей", "Песок", "ШВС"],
+        "Количество": [24, 4, 21, 3702],
+        "Ед. измерения": ["мешка", "п (поддонов)", "т", "шт"],
+        "Стоимость/Примечание": ["43.200 тг", "230.400 тг", "0 тг", "0 тг"]
+    }
+    df = pd.DataFrame(data)
+    df.to_csv(CSV_FILE, index=False)
+    return df
 
 df = load_data()
 
@@ -108,13 +94,12 @@ with tab1:
         st.markdown(f"*{cat}*")
         cat_items = df[df["Категория"] == cat]
         
-        # Обернем каждую категорию в красивую карточку
         card_html = "<div class='ios-card'>"
         for _, row in cat_items.iterrows():
             name = row["Наименование"]
             qty = row["Количество"]
             unit = row["Ед. измерения"]
-            card_html += f"<div style='display: justify; padding: 6px 0; border-bottom: 0.5px solid #F2F2F7;'><b>{name}</b> <span style='float: right; color: #007AFF; font-weight: 600;'>{qty} {unit}</span></div>"
+            card_html += f"<div style='padding: 6px 0; border-bottom: 0.5px solid #F2F2F7;'><b>{name}</b> <span style='float: right; color: #007AFF; font-weight: 600;'>{qty} {unit}</span></div>"
         card_html += "</div>"
         st.markdown(card_html, unsafe_allow_html=True)
 
