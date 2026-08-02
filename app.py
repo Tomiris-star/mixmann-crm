@@ -1,22 +1,18 @@
-mport streamlit as st
+import streamlit as st
 import pandas as pd
 import os
 
 st.set_page_config(page_title="Mixmann CRM", page_icon="📦", layout="centered")
 
-# Название и шапка
 st.title("📦 Mixmann CRM — Склад")
 
-# Путь к локальному CSV файлу
 CSV_FILE = "МойСклад - Склад.csv"
 
-# Загрузка данных
 @st.cache_data
 def load_data():
     if os.path.exists(CSV_FILE):
         return pd.read_csv(CSV_FILE)
     else:
-        # Резервный шаблон, если файл не найден
         data = {
             "Категория": ["Готовая продукция", "Готовая продукция", "Сырьё и материалы", "Пустые мешки"],
             "Наименование": ["Strong", "Клей", "Песок", "ШВС"],
@@ -30,10 +26,8 @@ def load_data():
 
 df = load_data()
 
-# --- СТИЛЬ СПИСКА КАК В ЧАТЕ ---
 st.markdown("### 💬 Актуальные остатки")
 
-# Проверяем колонки, чтобы точно совпадало с файлом
 if "Категория" in df.columns and "Наименование" in df.columns:
     categories = df["Категория"].unique()
     
@@ -50,7 +44,6 @@ if "Категория" in df.columns and "Наименование" in df.colum
 else:
     st.dataframe(df)
 
-# Секция для быстрого изменения остатков с телефона
 with st.expander("✏️ Изменить остатки на складе"):
     item_list = df["Наименование"].tolist() if "Наименование" in df.columns else []
     if item_list:
