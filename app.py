@@ -4,7 +4,49 @@ import os
 
 st.set_page_config(page_title="Mixmann CRM", page_icon="📦", layout="centered")
 
-st.title("📦 Mixmann CRM — Управление")
+# Применяем стили Apple Health (карточки, шрифты, отступы)
+st.markdown("""
+    <style>
+    /* Общий фон и шрифт */
+    .stApp {
+        background-color: #F2F2F7;
+        font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", Helvetica, Arial, sans-serif;
+    }
+    
+    /* Стилизация заголовков под iOS */
+    h1, h2, h3 {
+        color: #000000;
+        font-weight: 700;
+        letter-spacing: -0.5px;
+    }
+
+    /* Карточки в стиле Apple (белый блок с легким скруглением) */
+    div.element-container {
+        margin-bottom: 0.5rem;
+    }
+    
+    /* Оформление вкладок */
+    .stTabs [data-baseweb="tab-list"] {
+        gap: 8px;
+        background-color: #E5E5EA;
+        padding: 4px;
+        border-radius: 12px;
+    }
+    .stTabs [data-baseweb="tab"] {
+        background-color: transparent;
+        border-radius: 8px;
+        color: #3A3A3C;
+        font-weight: 600;
+    }
+    .stTabs [aria-selected="true"] {
+        background-color: #FFFFFF !important;
+        color: #000000 !important;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+    </style>
+""", unsafe_allow_html=True)
+
+st.title("Mixmann CRM")
 
 CSV_FILE = "МойСклад - Склад.csv"
 
@@ -26,10 +68,10 @@ def load_data():
 
 df = load_data()
 
-tab1, tab2, tab3 = st.tabs(["📋 Склад", "💰 Калькулятор прибыли", "🧪 Рецептуры и сырьё"])
+tab1, tab2, tab3 = st.tabs(["Склад", "Прибыль", "Рецептуры"])
 
 with tab1:
-    st.markdown("### Актуальные остатки")
+    st.markdown("### Сводка склада")
     if "Категория" in df.columns and "Наименование" in df.columns:
         categories = df["Категория"].unique()
         for cat in categories:
@@ -57,9 +99,9 @@ with tab1:
                 st.rerun()
 
 with tab2:
-    st.markdown("### 📊 Расчёт прибыли и рентабельности")
+    st.markdown("### Калькулятор прибыли")
     
-    product = st.selectbox("Выберите продукт", ["Strong", "Granit"])
+    product = st.selectbox("Продукт", ["Strong", "Granit"])
     
     if product == "Strong":
         cost_per_bag = 1191.60
@@ -68,12 +110,12 @@ with tab2:
         cost_per_bag = 1368.10
         default_price = 2300.0
         
-    st.markdown(f"Себестоимость 1 мешка ({product}): *{cost_per_bag:,.2f} ₸*".replace(",", " "))
+    st.markdown(f"Себестоимость 1 мешка: *{cost_per_bag:,.2f} ₸*".replace(",", " "))
     
-    selling_price = st.number_input("Отпускная цена за 1 мешок (₸)", value=default_price, step=50.0)
+    selling_price = st.number_input("Цена продажи за 1 мешок (₸)", value=default_price, step=50.0)
     bags_count = st.number_input("Количество мешков", value=50, step=10)
     
-    if st.button("Рассчитать маржу"):
+    if st.button("Рассчитать"):
         total_revenue = selling_price * bags_count
         total_cost = cost_per_bag * bags_count
         total_profit = total_revenue - total_cost
@@ -81,16 +123,16 @@ with tab2:
         margin = (profit_per_bag / cost_per_bag) * 100 if cost_per_bag > 0 else 0
         
         st.markdown("---")
-        st.markdown(f"- 💵 *Выручка:* {total_revenue:,.2f} ₸".replace(",", " "))
-        st.markdown(f"- 📦 *Себестоимость общая:* {total_cost:,.2f} ₸".replace(",", " "))
-        st.markdown(f"- 💰 *Чистая прибыль:* *{total_profit:,.2f} ₸*".replace(",", " "))
-        st.markdown(f"- 📈 *Прибыль с 1 мешка:* {profit_per_bag:,.2f} ₸".replace(",", " "))
-        st.markdown(f"- 📊 *Рентабельность:* *{margin:.1f}%*")
+        st.markdown(f"- *Выручка:* {total_revenue:,.2f} ₸".replace(",", " "))
+        st.markdown(f"- *Себестоимость:* {total_cost:,.2f} ₸".replace(",", " "))
+        st.markdown(f"- *Чистая прибыль:* *{total_profit:,.2f} ₸*".replace(",", " "))
+        st.markdown(f"- *Прибыль с 1 мешка:* {profit_per_bag:,.2f} ₸".replace(",", " "))
+        st.markdown(f"- *Рентабельность:* *{margin:.1f}%*")
 
 with tab3:
-    st.markdown("### 🧪 Детализация сырья (на 50 мешков)")
+    st.markdown("### Рецептуры и сырьё")
     
-    recipe = st.selectbox("Рецептура продукта", ["Strong", "Granit"])
+    recipe = st.selectbox("Выберите рецептуру", ["Strong", "Granit"])
     
     if recipe == "Strong":
         df_rec = pd.DataFrame({
@@ -114,8 +156,8 @@ with tab3:
         margin_text = "около 40,5%"
     
     st.table(df_rec)
-    st.markdown(f"*Итого себестоимость одного мешка:* {total_text}")
+    st.markdown(f"*Себестоимость одного мешка:* {total_text}")
     st.markdown("---")
-    st.markdown(f"Если отпускная цена *{recipe}* — *{price_text} / мешок*, то:")
+    st.markdown(f"Если цена *{recipe}* — *{price_text} / мешок*:തിന്")
     st.markdown(f"- Валовая прибыль: *{profit_text}*")
     st.markdown(f"- Рентабельность: *{margin_text}*")
